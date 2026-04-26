@@ -76,7 +76,7 @@ $(ok "설치 완료")
 
        ⌥⌘ Q / E / Z / C        2/3 비율로 모서리에 배치
 
-문제가 있으면:  brew services restart skhd
+문제가 있으면:  skhd --restart-service
 설정 수정:      $SKHDRC_PATH
 
 EOF

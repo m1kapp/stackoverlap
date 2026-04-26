@@ -1,110 +1,160 @@
 #!/bin/bash
 # StackOverlap - 창 배치 도구
-# Usage: winlayout [q|w|e|a|d|z|x|c]
-#
-# 모서리(QEZC) + 가장자리(AWDX) 8방향
-# 반복 누르면 순환: 1/2 → 2/3 → 3/4 → 1/2...
+# Usage: winlayout [q|w|e|a|s|d|z|x|c]
 #
 #   Q  W  E
-#   A     D
+#   A  S  D
 #   Z  X  C
+#
+# 반복 누르면 순환: 1/2 → 2/3 → 3/4 → 1/2...
+# S는 전체화면 ↔ 이전 위치 토글
 
 MODE="$1"
 
-if [[ ! "$MODE" =~ ^[qweadzxc]$ ]]; then
-    echo "Usage: winlayout [q|w|e|a|d|z|x|c]"
+if [[ ! "$MODE" =~ ^[qweasdzxc]$ ]]; then
+    echo "Usage: winlayout [q|w|e|a|s|d|z|x|c]"
     echo ""
     echo "  Q = 상단 왼쪽    W = 상단        E = 상단 오른쪽"
-    echo "  A = 왼쪽                          D = 오른쪽"
+    echo "  A = 왼쪽         S = 전체화면    D = 오른쪽"
     echo "  Z = 하단 왼쪽    X = 하단        C = 하단 오른쪽"
     echo ""
     echo "  반복 누르면: 1/2 → 2/3 → 3/4 순환"
+    echo "  S는 전체화면 ↔ 이전 위치 토글"
     exit 1
 fi
 
-osascript -l JavaScript -e "
-ObjC.import('AppKit');
-var se = Application('System Events');
-var frontProc = se.processes.whose({frontmost: true})[0];
-var win = frontProc.windows[0];
-var pos = win.position();
-var wsz = win.size();
-var cx = pos[0], cy = pos[1];
-var cw = wsz[0], ch = wsz[1];
+SAVE_DIR="$HOME/.local/share/stackoverlap"
+mkdir -p "$SAVE_DIR"
 
-// --- Monitor detection (NSScreen → AX coords) ---
-var screens = \$.NSScreen.screens;
-var count = screens.count;
-var primaryH = 0;
-for (var i = 0; i < count; i++) {
-    var pf = screens.objectAtIndex(i).frame;
-    if (Math.round(pf.origin.x) === 0 && Math.round(pf.origin.y) === 0) {
-        primaryH = Math.round(pf.size.height);
-        break;
+if [[ "$MODE" == "s" ]]; then
+    # S mode: fullscreen toggle with position save/restore via temp file
+    osascript -l JavaScript -e "
+    ObjC.import('AppKit');
+    var se = Application('System Events');
+    var frontProc = se.processes.whose({frontmost: true})[0];
+    var win = frontProc.windows[0];
+    var pos = win.position();
+    var wsz = win.size();
+    var cx = pos[0], cy = pos[1], cw = wsz[0], ch = wsz[1];
+
+    var screens = \$.NSScreen.screens;
+    var count = screens.count;
+    var primaryH = 0;
+    for (var i = 0; i < count; i++) {
+        var pf = screens.objectAtIndex(i).frame;
+        if (Math.round(pf.origin.x) === 0 && Math.round(pf.origin.y) === 0) {
+            primaryH = Math.round(pf.size.height); break;
+        }
     }
-}
-
-var sx = 0, sy = 0, sw = 0, sh = 0, found = false;
-for (var i = 0; i < count; i++) {
-    var f = screens.objectAtIndex(i).frame;
-    var mx = Math.round(f.origin.x);
-    var mw = Math.round(f.size.width);
-    var mh = Math.round(f.size.height);
-    var myAX = primaryH - Math.round(f.origin.y) - mh;
-    if (cx >= mx && cx < mx + mw && cy >= myAX && cy < myAX + mh) {
-        sx = mx; sy = myAX; sw = mw; sh = mh;
-        found = true;
-        break;
+    var sx = 0, sy = 0, sw = 0, sh = 0;
+    for (var i = 0; i < count; i++) {
+        var f = screens.objectAtIndex(i).frame;
+        var mx = Math.round(f.origin.x), mw = Math.round(f.size.width), mh = Math.round(f.size.height);
+        var myAX = primaryH - Math.round(f.origin.y) - mh;
+        if (cx >= mx && cx < mx + mw && cy >= myAX && cy < myAX + mh) {
+            sx = mx; sy = myAX; sw = mw; sh = mh; break;
+        }
     }
-}
-if (!found) {
-    var f0 = screens.objectAtIndex(0).frame;
-    sx = Math.round(f0.origin.x);
-    sw = Math.round(f0.size.width);
-    sh = Math.round(f0.size.height);
-    sy = primaryH - Math.round(f0.origin.y) - sh;
-}
-
-var menuH = 25;
-var mode = '$MODE';
-var ratios = [1/2, 2/3, 3/4];
-var tol = 8; // tolerance for position/size comparison
-
-// --- Calculate position for a given mode and ratio ---
-function calc(m, r) {
+    var menuH = 25;
     var usableH = sh - menuH;
-    var w, h, x, y;
+    var tol = 8;
+    var isFullish = Math.abs(cw - sw) < tol && Math.abs(ch - usableH) < tol;
+    var appName = frontProc.name().replace(/[^a-zA-Z0-9]/g, '_');
 
-    if (m === 'q') { w = sw * r; h = usableH * r; x = sx; y = sy + menuH; }
-    else if (m === 'w') { w = sw; h = usableH * r; x = sx; y = sy + menuH; }
-    else if (m === 'e') { w = sw * r; h = usableH * r; x = sx + sw - sw * r; y = sy + menuH; }
-    else if (m === 'a') { w = sw * r; h = usableH; x = sx; y = sy + menuH; }
-    else if (m === 'd') { w = sw * r; h = usableH; x = sx + sw - sw * r; y = sy + menuH; }
-    else if (m === 'z') { w = sw * r; h = usableH * r; x = sx; y = sy + sh - usableH * r; }
-    else if (m === 'x') { w = sw; h = usableH * r; x = sx; y = sy + sh - usableH * r; }
-    else if (m === 'c') { w = sw * r; h = usableH * r; x = sx + sw - sw * r; y = sy + sh - usableH * r; }
-
-    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
-}
-
-// --- Detect current ratio and cycle to next ---
-function matches(a, b) {
-    return Math.abs(a.x - b.x) < tol && Math.abs(a.y - b.y) < tol &&
-           Math.abs(a.w - b.w) < tol && Math.abs(a.h - b.h) < tol;
-}
-
-var current = { x: cx, y: cy, w: cw, h: ch };
-var nextIdx = 0; // default: start with 1/2
-
-for (var ri = 0; ri < ratios.length; ri++) {
-    var c = calc(mode, ratios[ri]);
-    if (matches(current, c)) {
-        nextIdx = (ri + 1) % ratios.length;
-        break;
+    // output: FULL or RESTORE, plus app name and current geometry
+    if (isFullish) {
+        // already full → print RESTORE + appName
+        'RESTORE,' + appName;
+    } else {
+        // not full → print SAVE + appName + current geometry + target geometry
+        'SAVE,' + appName + ',' + cx + ',' + cy + ',' + cw + ',' + ch + ',' + sx + ',' + (sy+menuH) + ',' + sw + ',' + usableH;
     }
-}
+    " | while IFS=',' read -r action appName rest; do
+        SAVE_FILE="$SAVE_DIR/${appName}.pos"
+        if [[ "$action" == "SAVE" ]]; then
+            IFS=',' read -r ocx ocy ocw och tx ty tw th <<< "$rest"
+            echo "$ocx,$ocy,$ocw,$och" > "$SAVE_FILE"
+            osascript -e "
+                tell application \"System Events\"
+                    set frontApp to first application process whose frontmost is true
+                    set position of window 1 of frontApp to {$tx, $ty}
+                    set size of window 1 of frontApp to {$tw, $th}
+                end tell"
+        elif [[ "$action" == "RESTORE" ]]; then
+            if [[ -f "$SAVE_FILE" ]]; then
+                IFS=',' read -r rx ry rw rh < "$SAVE_FILE"
+                osascript -e "
+                    tell application \"System Events\"
+                        set frontApp to first application process whose frontmost is true
+                        set position of window 1 of frontApp to {$rx, $ry}
+                        set size of window 1 of frontApp to {$rw, $rh}
+                    end tell"
+                rm -f "$SAVE_FILE"
+            fi
+        fi
+    done
+else
+    # 8-direction mode
+    osascript -l JavaScript -e "
+    ObjC.import('AppKit');
+    var se = Application('System Events');
+    var frontProc = se.processes.whose({frontmost: true})[0];
+    var win = frontProc.windows[0];
+    var pos = win.position();
+    var wsz = win.size();
+    var cx = pos[0], cy = pos[1], cw = wsz[0], ch = wsz[1];
 
-var result = calc(mode, ratios[nextIdx]);
-win.position = [result.x, result.y];
-win.size = [result.w, result.h];
-"
+    var screens = \$.NSScreen.screens;
+    var count = screens.count;
+    var primaryH = 0;
+    for (var i = 0; i < count; i++) {
+        var pf = screens.objectAtIndex(i).frame;
+        if (Math.round(pf.origin.x) === 0 && Math.round(pf.origin.y) === 0) {
+            primaryH = Math.round(pf.size.height); break;
+        }
+    }
+    var sx = 0, sy = 0, sw = 0, sh = 0, found = false;
+    for (var i = 0; i < count; i++) {
+        var f = screens.objectAtIndex(i).frame;
+        var mx = Math.round(f.origin.x), mw = Math.round(f.size.width), mh = Math.round(f.size.height);
+        var myAX = primaryH - Math.round(f.origin.y) - mh;
+        if (cx >= mx && cx < mx + mw && cy >= myAX && cy < myAX + mh) {
+            sx = mx; sy = myAX; sw = mw; sh = mh; found = true; break;
+        }
+    }
+    if (!found) {
+        var f0 = screens.objectAtIndex(0).frame;
+        sx = Math.round(f0.origin.x); sw = Math.round(f0.size.width);
+        sh = Math.round(f0.size.height); sy = primaryH - Math.round(f0.origin.y) - sh;
+    }
+
+    var menuH = 25, mode = '$MODE', tol = 8;
+    var ratios = [1/2, 2/3, 3/4];
+
+    function calc(m, r) {
+        var usableH = sh - menuH;
+        var w, h, x, y;
+        if (m === 'q') { w = sw*r; h = usableH*r; x = sx; y = sy+menuH; }
+        else if (m === 'w') { w = sw; h = usableH*r; x = sx; y = sy+menuH; }
+        else if (m === 'e') { w = sw*r; h = usableH*r; x = sx+sw-sw*r; y = sy+menuH; }
+        else if (m === 'a') { w = sw*r; h = usableH; x = sx; y = sy+menuH; }
+        else if (m === 'd') { w = sw*r; h = usableH; x = sx+sw-sw*r; y = sy+menuH; }
+        else if (m === 'z') { w = sw*r; h = usableH*r; x = sx; y = sy+sh-usableH*r; }
+        else if (m === 'x') { w = sw; h = usableH*r; x = sx; y = sy+sh-usableH*r; }
+        else if (m === 'c') { w = sw*r; h = usableH*r; x = sx+sw-sw*r; y = sy+sh-usableH*r; }
+        return {x:Math.round(x), y:Math.round(y), w:Math.round(w), h:Math.round(h)};
+    }
+    function matches(a, b) {
+        return Math.abs(a.x-b.x)<tol && Math.abs(a.y-b.y)<tol && Math.abs(a.w-b.w)<tol && Math.abs(a.h-b.h)<tol;
+    }
+
+    var current = {x:cx, y:cy, w:cw, h:ch};
+    var nextIdx = 0;
+    for (var ri = 0; ri < ratios.length; ri++) {
+        if (matches(current, calc(mode, ratios[ri]))) { nextIdx = (ri+1) % ratios.length; break; }
+    }
+    var result = calc(mode, ratios[nextIdx]);
+    win.position = [result.x, result.y];
+    win.size = [result.w, result.h];
+    "
+fi

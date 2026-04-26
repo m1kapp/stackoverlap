@@ -18,3 +18,6 @@ alt + cmd - w : __WINLAYOUT__ w
 alt + cmd - a : __WINLAYOUT__ a
 alt + cmd - d : __WINLAYOUT__ d
 alt + cmd - x : __WINLAYOUT__ x
+
+# 전체화면 토글
+alt + cmd - s : __WINLAYOUT__ s

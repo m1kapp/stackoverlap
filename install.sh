@@ -61,7 +61,8 @@ ok "$SKHDRC_PATH 작성 완료"
 
 # 7) skhd 서비스 시작/재시작
 say "skhd 서비스 (재)시작"
-brew services restart skhd >/dev/null
+skhd --stop-service 2>/dev/null || true
+skhd --start-service 2>/dev/null || true
 
 # 8) 마무리 안내
 cat <<EOF

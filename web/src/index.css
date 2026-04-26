@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Pretendard Variable", "Pretendard", system-ui, -apple-system,
+    sans-serif, "Tossface";
+  --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
+  --color-accent: oklch(0.7 0.15 250);
+  --color-accent-light: oklch(0.85 0.1 250);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

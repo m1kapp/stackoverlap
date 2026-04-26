@@ -1,0 +1,74 @@
+#!/bin/bash
+# StackOverlap - 창 배치 도구
+# Usage: winlayout [q|e|z|c] [비율]
+
+MODE="$1"
+RATIO="${2:-2/3}"
+
+if [[ ! "$MODE" =~ ^[qezc]$ ]]; then
+    echo "Usage: winlayout [q|e|z|c] [비율]"
+    echo "  q = 상단 왼쪽    e = 상단 오른쪽"
+    echo "  z = 하단 왼쪽    c = 하단 오른쪽"
+    echo "  비율: 2/3 (기본), 3/4, 1/2, 5/6 등"
+    exit 1
+fi
+
+NUM="${RATIO%/*}"
+DEN="${RATIO#*/}"
+
+# NSScreen은 Cocoa 좌표(bottom-left 원점, y↑), System Events position()은 AX 좌표(top-left 원점, y↓).
+# primary 높이를 기준으로 NSScreen frame을 AX 좌표로 변환해서 비교/지정한다.
+osascript -l JavaScript -e "
+ObjC.import('AppKit');
+var se = Application('System Events');
+var frontProc = se.processes.whose({frontmost: true})[0];
+var win = frontProc.windows[0];
+var pos = win.position();
+var cx = pos[0], cy = pos[1];
+
+var screens = \$.NSScreen.screens;
+var count = screens.count;
+
+var primaryH = 0;
+for (var i = 0; i < count; i++) {
+    var pf = screens.objectAtIndex(i).frame;
+    if (Math.round(pf.origin.x) === 0 && Math.round(pf.origin.y) === 0) {
+        primaryH = Math.round(pf.size.height);
+        break;
+    }
+}
+
+var sx = 0, sy = 0, sw = 0, sh = 0, found = false;
+for (var i = 0; i < count; i++) {
+    var f = screens.objectAtIndex(i).frame;
+    var mx = Math.round(f.origin.x);
+    var mw = Math.round(f.size.width);
+    var mh = Math.round(f.size.height);
+    var myAX = primaryH - Math.round(f.origin.y) - mh;
+    if (cx >= mx && cx < mx + mw && cy >= myAX && cy < myAX + mh) {
+        sx = mx; sy = myAX; sw = mw; sh = mh;
+        found = true;
+        break;
+    }
+}
+if (!found) {
+    var f0 = screens.objectAtIndex(0).frame;
+    sx = Math.round(f0.origin.x);
+    sw = Math.round(f0.size.width);
+    sh = Math.round(f0.size.height);
+    sy = primaryH - Math.round(f0.origin.y) - sh;
+}
+
+var menuH = 25;
+var w = Math.round(sw * $NUM / $DEN);
+var h = Math.round((sh - menuH) * $NUM / $DEN);
+var x, y;
+var mode = '$MODE';
+if (mode === 'q') { x = sx; y = sy + menuH; }
+else if (mode === 'e') { x = sx + sw - w; y = sy + menuH; }
+else if (mode === 'z') { x = sx; y = sy + sh - h; }
+else if (mode === 'c') { x = sx + sw - w; y = sy + sh - h; }
+
+win.position = [x, y];
+win.size = [w, h];
+"

@@ -1,34 +1,40 @@
 #!/bin/bash
 # StackOverlap - 창 배치 도구
-# Usage: winlayout [q|e|z|c] [비율]
+# Usage: winlayout [q|w|e|a|d|z|x|c]
+#
+# 모서리(QEZC) + 가장자리(AWDX) 8방향
+# 반복 누르면 순환: 1/2 → 2/3 → 3/4 → 1/2...
+#
+#   Q  W  E
+#   A     D
+#   Z  X  C
 
 MODE="$1"
-RATIO="${2:-2/3}"
 
-if [[ ! "$MODE" =~ ^[qezc]$ ]]; then
-    echo "Usage: winlayout [q|e|z|c] [비율]"
-    echo "  q = 상단 왼쪽    e = 상단 오른쪽"
-    echo "  z = 하단 왼쪽    c = 하단 오른쪽"
-    echo "  비율: 2/3 (기본), 3/4, 1/2, 5/6 등"
+if [[ ! "$MODE" =~ ^[qweadzxc]$ ]]; then
+    echo "Usage: winlayout [q|w|e|a|d|z|x|c]"
+    echo ""
+    echo "  Q = 상단 왼쪽    W = 상단        E = 상단 오른쪽"
+    echo "  A = 왼쪽                          D = 오른쪽"
+    echo "  Z = 하단 왼쪽    X = 하단        C = 하단 오른쪽"
+    echo ""
+    echo "  반복 누르면: 1/2 → 2/3 → 3/4 순환"
     exit 1
 fi
 
-NUM="${RATIO%/*}"
-DEN="${RATIO#*/}"
-
-# NSScreen은 Cocoa 좌표(bottom-left 원점, y↑), System Events position()은 AX 좌표(top-left 원점, y↓).
-# primary 높이를 기준으로 NSScreen frame을 AX 좌표로 변환해서 비교/지정한다.
 osascript -l JavaScript -e "
 ObjC.import('AppKit');
 var se = Application('System Events');
 var frontProc = se.processes.whose({frontmost: true})[0];
 var win = frontProc.windows[0];
 var pos = win.position();
+var wsz = win.size();
 var cx = pos[0], cy = pos[1];
+var cw = wsz[0], ch = wsz[1];
 
+// --- Monitor detection (NSScreen → AX coords) ---
 var screens = \$.NSScreen.screens;
 var count = screens.count;
-
 var primaryH = 0;
 for (var i = 0; i < count; i++) {
     var pf = screens.objectAtIndex(i).frame;
@@ -60,15 +66,45 @@ if (!found) {
 }
 
 var menuH = 25;
-var w = Math.round(sw * $NUM / $DEN);
-var h = Math.round((sh - menuH) * $NUM / $DEN);
-var x, y;
 var mode = '$MODE';
-if (mode === 'q') { x = sx; y = sy + menuH; }
-else if (mode === 'e') { x = sx + sw - w; y = sy + menuH; }
-else if (mode === 'z') { x = sx; y = sy + sh - h; }
-else if (mode === 'c') { x = sx + sw - w; y = sy + sh - h; }
+var ratios = [1/2, 2/3, 3/4];
+var tol = 8; // tolerance for position/size comparison
 
-win.position = [x, y];
-win.size = [w, h];
+// --- Calculate position for a given mode and ratio ---
+function calc(m, r) {
+    var usableH = sh - menuH;
+    var w, h, x, y;
+
+    if (m === 'q') { w = sw * r; h = usableH * r; x = sx; y = sy + menuH; }
+    else if (m === 'w') { w = sw; h = usableH * r; x = sx; y = sy + menuH; }
+    else if (m === 'e') { w = sw * r; h = usableH * r; x = sx + sw - sw * r; y = sy + menuH; }
+    else if (m === 'a') { w = sw * r; h = usableH; x = sx; y = sy + menuH; }
+    else if (m === 'd') { w = sw * r; h = usableH; x = sx + sw - sw * r; y = sy + menuH; }
+    else if (m === 'z') { w = sw * r; h = usableH * r; x = sx; y = sy + sh - usableH * r; }
+    else if (m === 'x') { w = sw; h = usableH * r; x = sx; y = sy + sh - usableH * r; }
+    else if (m === 'c') { w = sw * r; h = usableH * r; x = sx + sw - sw * r; y = sy + sh - usableH * r; }
+
+    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+}
+
+// --- Detect current ratio and cycle to next ---
+function matches(a, b) {
+    return Math.abs(a.x - b.x) < tol && Math.abs(a.y - b.y) < tol &&
+           Math.abs(a.w - b.w) < tol && Math.abs(a.h - b.h) < tol;
+}
+
+var current = { x: cx, y: cy, w: cw, h: ch };
+var nextIdx = 0; // default: start with 1/2
+
+for (var ri = 0; ri < ratios.length; ri++) {
+    var c = calc(mode, ratios[ri]);
+    if (matches(current, c)) {
+        nextIdx = (ri + 1) % ratios.length;
+        break;
+    }
+}
+
+var result = calc(mode, ratios[nextIdx]);
+win.position = [result.x, result.y];
+win.size = [result.w, result.h];
 "

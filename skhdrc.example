@@ -1,16 +1,20 @@
 # StackOverlap - 창 배치 단축키
 #
-# install.sh 실행 시 ~/.skhdrc 로 복사되며,
-# WINLAYOUT 자리는 실제 winlayout 설치 경로로 치환됩니다.
+# ⌥⌘ + 키 = 해당 방향으로 배치
+# 반복 누르면 순환: 1/2 → 2/3 → 3/4
 #
-# ⌥⌘ + Q/E/Z/C = 2/3 비율 (기본)
+#   Q  W  E
+#   A     D
+#   Z  X  C
+
+# 모서리
 alt + cmd - q : __WINLAYOUT__ q
 alt + cmd - e : __WINLAYOUT__ e
 alt + cmd - z : __WINLAYOUT__ z
 alt + cmd - c : __WINLAYOUT__ c
 
-# ⌥⌘⇧ + Q/E/Z/C = 3/4 비율
-alt + cmd + shift - q : __WINLAYOUT__ q 3/4
-alt + cmd + shift - e : __WINLAYOUT__ e 3/4
-alt + cmd + shift - z : __WINLAYOUT__ z 3/4
-alt + cmd + shift - c : __WINLAYOUT__ c 3/4
+# 가장자리
+alt + cmd - w : __WINLAYOUT__ w
+alt + cmd - a : __WINLAYOUT__ a
+alt + cmd - d : __WINLAYOUT__ d
+alt + cmd - x : __WINLAYOUT__ x

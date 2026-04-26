@@ -1,4 +1,4 @@
-const QEZC = new Set(["Q", "E", "Z", "C"]);
+const ACTIVE_KEYS = new Set(["Q", "W", "E", "A", "D", "Z", "X", "C"]);
 const MOD_KEYS = new Set(["opt", "cmd"]);
 
 export function MiniKeyboard({
@@ -24,7 +24,7 @@ export function MiniKeyboard({
       {/* QWERTY */}
       <Row indent={4}>
         <Key label="Q" corner="좌상" lit={litKeys.has("Q")} pressed={pressedKeys.has("Q")} onClick={() => onToggle("Q")} />
-        <Key label="W" />
+        <Key label="W" corner="상" lit={litKeys.has("W")} pressed={pressedKeys.has("W")} onClick={() => onToggle("W")} />
         <Key label="E" corner="우상" lit={litKeys.has("E")} pressed={pressedKeys.has("E")} onClick={() => onToggle("E")} />
         <Key label="R" />
         <Key label="T" />
@@ -32,9 +32,9 @@ export function MiniKeyboard({
       </Row>
       {/* ASDF */}
       <Row indent={8}>
-        <Key label="A" />
+        <Key label="A" corner="좌" lit={litKeys.has("A")} pressed={pressedKeys.has("A")} onClick={() => onToggle("A")} />
         <Key label="S" />
-        <Key label="D" />
+        <Key label="D" corner="우" lit={litKeys.has("D")} pressed={pressedKeys.has("D")} onClick={() => onToggle("D")} />
         <Key label="F" />
         <Key label="G" />
         <Key label="H" />
@@ -43,7 +43,7 @@ export function MiniKeyboard({
       <Row>
         <Key label="shift" sub="⇧" w="w-10" />
         <Key label="Z" corner="좌하" lit={litKeys.has("Z")} pressed={pressedKeys.has("Z")} onClick={() => onToggle("Z")} />
-        <Key label="X" />
+        <Key label="X" corner="하" lit={litKeys.has("X")} pressed={pressedKeys.has("X")} onClick={() => onToggle("X")} />
         <Key label="C" corner="우하" lit={litKeys.has("C")} pressed={pressedKeys.has("C")} onClick={() => onToggle("C")} />
         <Key label="V" />
         <Key label="B" />
@@ -97,16 +97,14 @@ function Key({
   onClick?: () => void;
   w?: string;
 }) {
-  const isQEZC = QEZC.has(label);
+  const isActive = ACTIVE_KEYS.has(label);
   const isMod = MOD_KEYS.has(label);
 
   let style: string;
   if (pressed) {
-    // actively being held down
     style =
       "border-accent bg-accent/30 text-white shadow-[0_0_12px_rgba(100,160,255,0.3)] scale-95";
-  } else if (lit && (isQEZC || isMod)) {
-    // window placed, key stays softly lit
+  } else if (lit && (isActive || isMod)) {
     style =
       "border-accent/50 bg-accent/15 text-accent-light shadow-[0_0_8px_rgba(100,160,255,0.15)]";
   } else if (modifier) {
@@ -119,7 +117,7 @@ function Key({
     <div
       onClick={onClick}
       className={`${w} h-8 rounded-md border flex flex-col items-center justify-center leading-none gap-px transition-all duration-150 ${style} ${
-        isQEZC ? "cursor-pointer" : ""
+        isActive ? "cursor-pointer" : ""
       }`}
     >
       {sub ? (

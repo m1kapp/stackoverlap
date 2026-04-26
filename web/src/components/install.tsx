@@ -104,24 +104,38 @@ export function Install() {
           </span>
           아무 창이나 포커스하고 눌러보세요
         </p>
-        <div className="pl-7 grid grid-cols-2 gap-1.5 max-w-xs">
+        <div className="pl-7 grid grid-cols-3 gap-1.5 max-w-xs">
           {[
-            { keys: "⌥ ⌘ Q", pos: "상단 왼쪽" },
-            { keys: "⌥ ⌘ E", pos: "상단 오른쪽" },
-            { keys: "⌥ ⌘ Z", pos: "하단 왼쪽" },
-            { keys: "⌥ ⌘ C", pos: "하단 오른쪽" },
-          ].map(({ keys, pos }) => (
-            <div
-              key={keys}
-              className="flex items-center justify-between rounded-md bg-neutral-800/50 border border-neutral-800 px-2.5 py-1.5"
-            >
-              <kbd className="font-mono text-[11px] text-accent-light">
-                {keys}
-              </kbd>
-              <span className="text-[10px] text-neutral-500">{pos}</span>
-            </div>
-          ))}
+            { keys: "Q", pos: "좌상" },
+            { keys: "W", pos: "상" },
+            { keys: "E", pos: "우상" },
+            { keys: "A", pos: "좌" },
+            { keys: "", pos: "" },
+            { keys: "D", pos: "우" },
+            { keys: "Z", pos: "좌하" },
+            { keys: "X", pos: "하" },
+            { keys: "C", pos: "우하" },
+          ].map(({ keys, pos }, i) =>
+            keys ? (
+              <div
+                key={keys}
+                className="flex items-center justify-between rounded-md bg-neutral-800/50 border border-neutral-800 px-2.5 py-1.5"
+              >
+                <kbd className="font-mono text-[11px] text-accent-light">
+                  {keys}
+                </kbd>
+                <span className="text-[10px] text-neutral-500">{pos}</span>
+              </div>
+            ) : (
+              <div key={i} className="flex items-center justify-center text-[10px] text-neutral-600">
+                ⌥⌘+
+              </div>
+            ),
+          )}
         </div>
+        <p className="pl-7 mt-2 text-[10px] text-neutral-500">
+          반복 누르면 1/2 → 2/3 → 3/4 순환
+        </p>
       </div>
     </div>
   );

@@ -1,14 +1,10 @@
 #!/bin/bash
 # StackOverlap 설치 스크립트
-# - skhd 설치 (Homebrew)
-# - winlayout 스크립트를 ~/.local/bin 에 복사
-# - skhdrc.example 을 ~/.skhdrc 로 설치 (경로 치환)
-# - skhd 서비스 시작
-# - 접근성 권한 안내
+# curl -sL https://raw.githubusercontent.com/m1kapp/stackoverlap/main/install.sh | bash
 
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+RAW_BASE="https://raw.githubusercontent.com/m1kapp/stackoverlap/main"
 INSTALL_DIR="$HOME/.local/bin"
 WINLAYOUT_PATH="$INSTALL_DIR/winlayout"
 SKHDRC_PATH="$HOME/.skhdrc"
@@ -37,10 +33,10 @@ else
     ok "skhd 이미 설치됨"
 fi
 
-# 4) winlayout 복사
+# 4) winlayout 다운로드
 say "winlayout → $WINLAYOUT_PATH"
 mkdir -p "$INSTALL_DIR"
-cp "$REPO_DIR/bin/winlayout" "$WINLAYOUT_PATH"
+curl -sL "$RAW_BASE/bin/winlayout" -o "$WINLAYOUT_PATH"
 chmod +x "$WINLAYOUT_PATH"
 ok "winlayout 설치 완료"
 
@@ -60,7 +56,7 @@ if [[ -e "$SKHDRC_PATH" ]]; then
     say "기존 $SKHDRC_PATH → $BACKUP 으로 백업"
     cp "$SKHDRC_PATH" "$BACKUP"
 fi
-sed "s|__WINLAYOUT__|$WINLAYOUT_PATH|g" "$REPO_DIR/skhdrc.example" > "$SKHDRC_PATH"
+curl -sL "$RAW_BASE/skhdrc.example" | sed "s|__WINLAYOUT__|$WINLAYOUT_PATH|g" > "$SKHDRC_PATH"
 ok "$SKHDRC_PATH 작성 완료"
 
 # 7) skhd 서비스 시작/재시작
@@ -78,7 +74,6 @@ $(ok "설치 완료")
   2. 어떤 창이든 포커스한 뒤 단축키를 눌러 보세요:
 
        ⌥⌘ Q / E / Z / C        2/3 비율로 모서리에 배치
-       ⌥⌘⇧ Q / E / Z / C       3/4 비율
 
 문제가 있으면:  brew services restart skhd
 설정 수정:      $SKHDRC_PATH

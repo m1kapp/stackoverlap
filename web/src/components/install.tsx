@@ -110,32 +110,38 @@ export function Install() {
             { keys: "W", pos: "상" },
             { keys: "E", pos: "우상" },
             { keys: "A", pos: "좌" },
-            { keys: "", pos: "" },
+            { keys: "S", pos: "전체" },
             { keys: "D", pos: "우" },
             { keys: "Z", pos: "좌하" },
             { keys: "X", pos: "하" },
             { keys: "C", pos: "우하" },
           ].map(({ keys, pos }, i) =>
-            keys ? (
-              <div
-                key={keys}
-                className="flex items-center justify-between rounded-md bg-neutral-800/50 border border-neutral-800 px-2.5 py-1.5"
-              >
-                <kbd className="font-mono text-[11px] text-accent-light">
-                  {keys}
-                </kbd>
-                <span className="text-[10px] text-neutral-500">{pos}</span>
-              </div>
-            ) : (
-              <div key={i} className="flex items-center justify-center text-[10px] text-neutral-600">
-                ⌥⌘+
-              </div>
-            ),
+            <div
+              key={keys || i}
+              className={`flex items-center justify-between rounded-md border px-2.5 py-1.5 ${
+                keys === "S"
+                  ? "bg-accent/10 border-accent/30"
+                  : "bg-neutral-800/50 border-neutral-800"
+              }`}
+            >
+              <kbd className="font-mono text-[11px] text-accent-light">
+                {keys}
+              </kbd>
+              <span className="text-[10px] text-neutral-500">{pos}</span>
+            </div>,
           )}
         </div>
-        <p className="pl-7 mt-2 text-[10px] text-neutral-500">
-          반복 누르면 1/2 → 2/3 → 3/4 순환
-        </p>
+        <div className="pl-7 mt-3 space-y-1.5 text-[11px] text-neutral-500">
+          <p>
+            <span className="text-neutral-300">반복</span> 같은 키를 연속으로
+            누르면 1/2 → 2/3 → 3/4 순환
+          </p>
+          <p>
+            <kbd className="font-mono text-accent-light">S</kbd>{" "}
+            <span className="text-neutral-300">전체화면</span> 한번 더 누르면
+            원래 위치로 복원
+          </p>
+        </div>
       </div>
     </div>
   );

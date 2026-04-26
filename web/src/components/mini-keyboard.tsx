@@ -1,4 +1,4 @@
-const ACTIVE_KEYS = new Set(["Q", "W", "E", "A", "D", "Z", "X", "C"]);
+const ACTIVE_KEYS = new Set(["Q", "W", "E", "A", "S", "D", "Z", "X", "C"]);
 const MOD_KEYS = new Set(["opt", "cmd"]);
 
 export function MiniKeyboard({
@@ -33,7 +33,7 @@ export function MiniKeyboard({
       {/* ASDF */}
       <Row indent={8}>
         <Key label="A" corner="좌" lit={litKeys.has("A")} pressed={pressedKeys.has("A")} onClick={() => onToggle("A")} />
-        <Key label="S" />
+        <Key label="S" corner="전체" lit={litKeys.has("S")} pressed={pressedKeys.has("S")} onClick={() => onToggle("S")} />
         <Key label="D" corner="우" lit={litKeys.has("D")} pressed={pressedKeys.has("D")} onClick={() => onToggle("D")} />
         <Key label="F" />
         <Key label="G" />

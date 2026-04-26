@@ -44,6 +44,21 @@ export function Install() {
           <p className="text-neutral-400">접근성 권한 허용</p>
         </div>
       </div>
+
+      {/* Terminal tip */}
+      <div className="mt-8 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-3 text-left text-xs text-neutral-400">
+        <p className="mb-1 text-neutral-300 font-medium">Tip: 터미널 여는 법</p>
+        <p>
+          <kbd className="font-mono text-accent-light">⌘ Space</kbd> →{" "}
+          <span className="text-neutral-300">Terminal</span> 검색 후 Enter
+        </p>
+        <p className="mt-1">
+          또는 Finder →{" "}
+          <span className="text-neutral-300">
+            애플리케이션 → 유틸리티 → 터미널
+          </span>
+        </p>
+      </div>
     </div>
   );
 }

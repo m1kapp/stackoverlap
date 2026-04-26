@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@m1kapp/kit": "^0.0.16",
+    "@vercel/og": "^0.11.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
